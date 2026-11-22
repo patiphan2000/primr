@@ -1,6 +1,5 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/logo-dark.svg">
     <img src="docs/assets/readme/primr-icon.svg" width="220" alt="PRIMR logo">
   </picture>
 </p>
