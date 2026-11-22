@@ -1,13 +1,14 @@
+import base64
+import io
 import os
 import tempfile
 import threading
 import time
 
-import mss
 from PIL import Image
 
 from .driver_helper import get_driver
-from .video_helper import save_recording
+from .video_helper import _get_cdp_ws_url, _screencast_loop, save_recording
 
 
 def smooth_scroll(driver, target_y, max_speed=400, ease_distance=300, min_speed_ratio=0.0):
@@ -112,68 +113,39 @@ def smooth_scroll(driver, target_y, max_speed=400, ease_distance=300, min_speed_
     driver.set_script_timeout(120)
     driver.execute_async_script(script, target_y, max_speed, ease_distance, min_speed_ratio)
 
-def _capture_window_loop(
-    rect: dict,
-    frames: list[Image.Image],
-    capture_stop: threading.Event,
-    fps: int = 8,
-    dpr: float = 1.0,
-):
-    monitor = {
-        "left": max(0, int(rect["x"] * dpr)),
-        "top": max(0, int(rect["y"] * dpr)),
-        "width": int(rect["width"] * dpr),
-        "height": int(rect["height"] * dpr),
-    }
-    interval = 1.0 / fps
-
-    with mss.mss() as sct:
-        while not capture_stop.is_set():
-            t0 = time.perf_counter()
-            shot = sct.grab(monitor)
-            frames.append(Image.frombytes("RGB", shot.size, shot.bgra, "raw", "BGRX"))
-            elapsed = time.perf_counter() - t0
-            capture_stop.wait(max(0.0, interval - elapsed))
-
 def re_run_actions(
-    url: str, 
-    saved_actions: list[dict], 
-    stop_event: threading.Event | None = None, 
-    on_saving=None
-) -> str | None:
+    url: str,
+    saved_actions: list[dict],
+    stop_event: threading.Event | None = None,
+    on_saving=None,
+) -> tuple[str, str, str] | None:
     
-    driver = get_driver(
-        url=url,
-        web_options={
-            'hide-scrollbars': True
-        }
-    )
-    # driver.set_window_rect(x=50, y=50, width=1280, height=720)
-    driver.switch_to.window(driver.current_window_handle)
-    driver.execute_script("window.focus();")
-    time.sleep(0.3)
+    driver = get_driver(url=url, web_options={"hide-scrollbars": True})
 
-    frames: list[Image.Image] = []
+    frames: list[tuple[float, bytes]] = []
     temp_dir = tempfile.mkdtemp(prefix="primr_")
-    video_path = os.path.join(temp_dir, "recording.mp4")
+    preview_gif_path = os.path.join(temp_dir, "preview.gif")
     gif_path = os.path.join(temp_dir, "recording.gif")
+    video_path = os.path.join(temp_dir, "recording.mp4")
 
+    # Initial frame at t=0 (screencast only emits when the screen changes)
+    init_shot = driver.execute_cdp_cmd("Page.captureScreenshot", {"format": "jpeg", "quality": 85})
+    frames.append((0.0, base64.b64decode(init_shot["data"])))
+
+    start_t = time.perf_counter()
     capture_stop = threading.Event()
-    dpr = driver.execute_script("return window.devicePixelRatio") or 1.0
-    rect = driver.get_window_rect()
-
+    ws_url = _get_cdp_ws_url(driver)
     rec_thread = threading.Thread(
-        target=_capture_window_loop,
-        args=(rect, frames, capture_stop, 8, dpr),
+        target=_screencast_loop,
+        args=(ws_url, frames, capture_stop, start_t),
         daemon=True,
     )
     rec_thread.start()
 
     try:
-        for idx, action in enumerate(saved_actions):
+        for action in saved_actions:
             if stop_event and stop_event.is_set():
                 break
-
             if action["action"] != "scroll":
                 continue
 
@@ -185,6 +157,7 @@ def re_run_actions(
             else:
                 time.sleep(1)
     finally:
+        total_duration = time.perf_counter() - start_t
         capture_stop.set()
         rec_thread.join(timeout=2)
         driver.quit()
@@ -195,6 +168,13 @@ def re_run_actions(
     if on_saving:
         on_saving()
 
-    save_recording(frames, gif_path=gif_path, video_path=video_path, fps=8)
-    return gif_path
-
+    save_recording(
+        frames,
+        total_duration=total_duration,
+        preview_gif_path=preview_gif_path,
+        gif_path=gif_path,
+        video_path=video_path,
+        video_fps=90,
+        gif_fps=60,
+    )
+    return preview_gif_path, gif_path, video_path

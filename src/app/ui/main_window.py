@@ -45,7 +45,7 @@ class RecordWorker(QThread):
 
 class ReRunWorker(QThread):
     status_changed = Signal(str)
-    finished_rerun = Signal(str)
+    finished_rerun = Signal(str, str, str)
     error_occurred = Signal(str)
 
     def __init__(self, url: str, actions: list[dict]):
@@ -56,13 +56,14 @@ class ReRunWorker(QThread):
 
     def run(self):
         try:
-            gif_path = re_run_actions(
+            result = re_run_actions(
                 self.url,
                 self.actions,
                 self.stop_event,
                 on_saving=lambda: self.status_changed.emit("Saving preview..."),
             )
-            self.finished_rerun.emit(gif_path or "")
+            preview_gif, full_gif, video = result if result else ("", "", "")
+            self.finished_rerun.emit(preview_gif, full_gif, video)
         except Exception as e:
             self.error_occurred.emit(str(e))
 
@@ -186,13 +187,11 @@ class MainWindow(QMainWindow):
         self.stop_btn.setEnabled(False)
         self.stop_btn.setText(text)
 
-    def on_rerun_finished(self, gif_path: str):
-        if gif_path:
-            self.last_temp_dir = os.path.dirname(gif_path)
-            self.playback.load_gif(gif_path)
+    def on_rerun_finished(self, preview_gif: str, full_gif: str, video_path: str):
+        if preview_gif:
+            self.last_temp_dir = os.path.dirname(preview_gif)
+            self.playback.load_recording(preview_gif, full_gif, video_path)
         self.stack.setCurrentIndex(0)
-        self.showNormal()
-        self.activateWindow()
 
     def on_worker_error(self, error_msg: str):
         print("Worker error:", error_msg)

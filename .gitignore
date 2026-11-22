@@ -95,3 +95,7 @@ dmypy.json
 *.sqlite
 *.sqlite3
 *.db
+
+# === Files & Output ===
+*.mp4
+*.gif

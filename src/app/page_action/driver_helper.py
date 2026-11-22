@@ -1,4 +1,5 @@
 from typing import Literal
+
 from selenium import webdriver
 
 ASPECT_RATION_RESOLUTION = {
@@ -10,13 +11,14 @@ ASPECT_RATION_RESOLUTION = {
 def get_driver(
     url: str,
     aspect_ratio: Literal['4:3', '16:9', '18:9'] = '4:3',
-    orientation: Literal['portrait', 'landscape'] = 'landscape',
+    orientation: Literal['portrait', 'landscape'] = 'portrait',
     web_options: dict[str, bool]={},
 ):
     # Set options
     options = webdriver.ChromeOptions()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
+    options.add_argument("--remote-allow-origins=*")
     
     # Add URL
     options.add_argument(f"--app={url}")
@@ -25,8 +27,7 @@ def get_driver(
     w, h = ASPECT_RATION_RESOLUTION.get(aspect_ratio, (1280, 960))
     x, y = w, h
     if orientation == 'portrait':
-        x = h,
-        y = w
+        x, y = h, w
     options.add_argument(f"--window-size={x},{y}")
     
     # More Option
