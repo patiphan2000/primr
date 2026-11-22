@@ -1,13 +1,11 @@
 import base64
 import io
 import json
-import os
-import tempfile
 import threading
 import time
 import urllib.request
 
-import imageio.v3 as iio
+import imageio.v2 as iio_v2
 import numpy as np
 import websocket
 from PIL import Image
@@ -58,7 +56,8 @@ def _screencast_loop(
                 raw = ws.recv()
             except websocket.WebSocketTimeoutException:
                 continue
-            except Exception:
+            except Exception as e:
+                print("Screencast stopped early:", repr(e))
                 break
 
             msg = json.loads(raw)
@@ -95,62 +94,6 @@ def _resample_frames(
             src_idx += 1
         out.append(frames[src_idx][1])
     return out
-
-
-def save_recording(
-    raw_frames: list[tuple[float, bytes]],
-    total_duration: float,
-    preview_gif_path: str,
-    gif_path: str,
-    video_path: str,
-    video_fps: int = 30,
-    gif_fps: int = 15,
-):
-    if not raw_frames:
-        return
-
-    decoded = [
-        (t, Image.open(io.BytesIO(data)).convert("RGB"))
-        for t, data in raw_frames
-    ]
-
-    # 1. Compressed 720p GIF for UI preview only
-    preview_resized = [
-        (t, resize_to_720p(img).quantize(colors=128, method=Image.Quantize.FASTOCTREE))
-        for t, img in decoded
-    ]
-    preview_out = _resample_frames(preview_resized, gif_fps, total_duration)
-    preview_out[0].save(
-        preview_gif_path,
-        save_all=True,
-        append_images=preview_out[1:],
-        duration=int(1000 / gif_fps),
-        loop=0,
-    )
-
-    # 2. Full-resolution GIF for saving
-    full_gif_frames = [
-        (t, img.quantize(colors=256, method=Image.Quantize.FASTOCTREE))
-        for t, img in decoded
-    ]
-    full_gif_out = _resample_frames(full_gif_frames, gif_fps, total_duration)
-    full_gif_out[0].save(
-        gif_path,
-        save_all=True,
-        append_images=full_gif_out[1:],
-        duration=int(1000 / gif_fps),
-        loop=0,
-    )
-
-    # 3. Full-resolution 30 FPS MP4 (ensure even width/height for H.264)
-    mp4_frames = []
-    for t, img in decoded:
-        w, h = img.size
-        even_img = img.crop((0, 0, w - (w % 2), h - (h % 2)))
-        mp4_frames.append((t, np.array(even_img)))
-
-    mp4_out = _resample_frames(mp4_frames, video_fps, total_duration)
-    iio.imwrite(video_path, mp4_out, fps=video_fps, macro_block_size=2)
     
 def save_preview_gif(
     raw_frames: list[tuple[float, bytes]],
@@ -179,17 +122,28 @@ def save_preview_gif(
         loop=0,
     )
 
-
 def export_recording(
     raw_frames: list[tuple[float, bytes]],
     total_duration: float,
     gif_path: str,
     video_path: str,
-    video_fps: int = 90,
-    gif_fps: int = 30,
+    video_fps: int = 30,
+    gif_fps: int = 15,
 ):
+    print(
+        f"[Export] frames={len(raw_frames)}, "
+        f"last_frame_t={raw_frames[-1][0]:.2f}s, "
+        f"total_duration={total_duration:.2f}s"
+    )
+
     if not raw_frames:
         return
+
+    print(
+        f"[Export] frames={len(raw_frames)}, "
+        f"last_frame_t={raw_frames[-1][0]:.2f}s, "
+        f"total_duration={total_duration:.2f}s"
+    )
 
     decoded = [
         (t, Image.open(io.BytesIO(data)).convert("RGB"))
@@ -210,12 +164,24 @@ def export_recording(
         loop=0,
     )
 
-    # Full-resolution 90 FPS MP4
-    mp4_frames = []
-    for t, img in decoded:
-        w, h = img.size
-        even_img = img.crop((0, 0, w - (w % 2), h - (h % 2)))
-        mp4_frames.append((t, np.array(even_img)))
+    # Stream full-res 30 FPS MP4 directly to FFmpeg
+    duration = max(total_duration, decoded[-1][0])
+    num_out = max(1, int(duration * video_fps))
+    src_idx = 0
 
-    mp4_out = _resample_frames(mp4_frames, video_fps, total_duration)
-    iio.imwrite(video_path, mp4_out, fps=video_fps, macro_block_size=2)
+    with iio_v2.get_writer(
+        video_path, fps=video_fps, codec="libx264", macro_block_size=2
+    ) as writer:
+        cached_idx = -1
+        cached_arr = None
+        for i in range(num_out):
+            t = i / video_fps
+            while src_idx + 1 < len(decoded) and decoded[src_idx + 1][0] <= t:
+                src_idx += 1
+            if src_idx != cached_idx:
+                img = decoded[src_idx][1]
+                w, h = img.size
+                even_img = img.crop((0, 0, w - (w % 2), h - (h % 2)))
+                cached_arr = np.array(even_img)
+                cached_idx = src_idx
+            writer.append_data(cached_arr)
