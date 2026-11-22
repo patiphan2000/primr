@@ -122,35 +122,29 @@ def save_preview_gif(
         loop=0,
     )
 
-def export_recording(
-    raw_frames: list[tuple[float, bytes]],
-    total_duration: float,
-    gif_path: str,
-    video_path: str,
-    video_fps: int = 30,
-    gif_fps: int = 15,
-):
-    print(
-        f"[Export] frames={len(raw_frames)}, "
-        f"last_frame_t={raw_frames[-1][0]:.2f}s, "
-        f"total_duration={total_duration:.2f}s"
-    )
-
-    if not raw_frames:
-        return
-
-    print(
-        f"[Export] frames={len(raw_frames)}, "
-        f"last_frame_t={raw_frames[-1][0]:.2f}s, "
-        f"total_duration={total_duration:.2f}s"
-    )
-
-    decoded = [
+def _decode_frames(raw_frames: list[tuple[float, bytes]]) -> list[tuple[float, Image.Image]]:
+    return [
         (t, Image.open(io.BytesIO(data)).convert("RGB"))
         for t, data in raw_frames
     ]
 
-    # Full-resolution GIF
+
+def export_gif(
+    raw_frames: list[tuple[float, bytes]],
+    total_duration: float,
+    gif_path: str,
+    gif_fps: int = 15,
+):
+    if not raw_frames:
+        return
+
+    print(
+        f"[Export GIF] frames={len(raw_frames)}, "
+        f"last_frame_t={raw_frames[-1][0]:.2f}s, "
+        f"total_duration={total_duration:.2f}s"
+    )
+
+    decoded = _decode_frames(raw_frames)
     gif_frames = [
         (t, img.quantize(colors=256, method=Image.Quantize.FASTOCTREE))
         for t, img in decoded
@@ -164,7 +158,23 @@ def export_recording(
         loop=0,
     )
 
-    # Stream full-res 30 FPS MP4 directly to FFmpeg
+
+def export_video(
+    raw_frames: list[tuple[float, bytes]],
+    total_duration: float,
+    video_path: str,
+    video_fps: int = 30,
+):
+    if not raw_frames:
+        return
+
+    print(
+        f"[Export MP4] frames={len(raw_frames)}, "
+        f"last_frame_t={raw_frames[-1][0]:.2f}s, "
+        f"total_duration={total_duration:.2f}s"
+    )
+
+    decoded = _decode_frames(raw_frames)
     duration = max(total_duration, decoded[-1][0])
     num_out = max(1, int(duration * video_fps))
     src_idx = 0

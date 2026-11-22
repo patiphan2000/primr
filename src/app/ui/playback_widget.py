@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.page_action import export_recording
+from app.page_action import export_gif, export_video
 
 
 class PlaybackWidget(QWidget):
@@ -35,13 +35,13 @@ class PlaybackWidget(QWidget):
         layout.addWidget(self.display, stretch=1)
 
         controls = QHBoxLayout()
-        self.toggle_btn = QPushButton("Pause")
+        self.toggle_btn = QPushButton("Save MP4")
         self.toggle_btn.setEnabled(False)
-        self.toggle_btn.clicked.connect(self.toggle_play)
+        self.toggle_btn.clicked.connect(self.on_click_save_video)
 
-        self.save_btn = QPushButton("Save MP4 & GIF")
+        self.save_btn = QPushButton("Save GIF")
         self.save_btn.setEnabled(False)
-        self.save_btn.clicked.connect(self.on_click_save)
+        self.save_btn.clicked.connect(self.on_click_save_gif)
 
         controls.addWidget(self.toggle_btn)
         controls.addWidget(self.save_btn)
@@ -65,38 +65,65 @@ class PlaybackWidget(QWidget):
         self.movie.start()
 
         self.toggle_btn.setEnabled(True)
-        self.toggle_btn.setText("Pause")
         self.save_btn.setEnabled(True)
-
-    def on_click_save(self):
+            
+    def on_click_save_video(self):
         if not self.raw_frames:
             return
         default_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
         default_path = os.path.join(default_dir, "recording")
         chosen_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Recording (MP4 & GIF)", default_path, "All Files (*)"
+            self, "Save Recording MP4", default_path, "All Files (*)"
         )
         if not chosen_path:
             return
 
         base_path, _ = os.path.splitext(chosen_path)
         dst_mp4 = f"{base_path}.mp4"
-        dst_gif = f"{base_path}.gif"
 
         self.save_btn.setEnabled(False)
         self.save_btn.setText("Saving...")
         QApplication.processEvents()
         try:
-            export_recording(
+            export_video(
                 self.raw_frames,
                 self.total_duration,
-                gif_path=dst_gif,
                 video_path=dst_mp4,
+                video_fps=60
             )
-            QMessageBox.information(self, "Saved", f"Saved:\n{dst_mp4}\n{dst_gif}")
+            QMessageBox.information(self, "Saved", f"Saved:\n{dst_mp4}")
         finally:
             self.save_btn.setEnabled(True)
-            self.save_btn.setText("Save MP4 & GIF")
+            self.save_btn.setText("Save MP4")
+    
+    def on_click_save_gif(self):
+            if not self.raw_frames:
+                return
+            default_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
+            default_path = os.path.join(default_dir, "recording")
+            chosen_path, _ = QFileDialog.getSaveFileName(
+                self, "Save Recording GIF", default_path, "All Files (*)"
+            )
+            if not chosen_path:
+                return
+    
+            base_path, _ = os.path.splitext(chosen_path)
+            dst_gif = f"{base_path}.gif"
+    
+            self.save_btn.setEnabled(False)
+            self.save_btn.setText("Saving...")
+            QApplication.processEvents()
+            try:
+                export_gif(
+                    self.raw_frames,
+                    self.total_duration,
+                    gif_path=dst_gif,
+                    gif_fps=60
+                )
+                QMessageBox.information(self, "Saved", f"Saved:\n{dst_gif}")
+            finally:
+                self.save_btn.setEnabled(True)
+                self.save_btn.setText("Save GIF")
             
     def _update_scaled_size(self):
         if not self.movie or not self.natural_size.isValid():
