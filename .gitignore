@@ -1,0 +1,97 @@
+# === macOS ===
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+develop-eggs/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+.installed.cfg
+MANIFEST
+
+# === Virtual Environments ===
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# === Qt / PySide6 ===
+# Compiled UI & Resource files (uncomment if generated during build rather than tracked)
+# ui_*.py
+# *_rc.py
+# rc_*.py
+
+# Qt Creator / Qt Designer user settings
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.autosave
+*.qmlc
+*.jsc
+
+# === Packaging (PyInstaller / Nuitka / py2app) ===
+*.manifest
+*.spec
+*.app/
+*.dmg
+*.pkg
+*.build/
+*.dist/
+*.onefile-build/
+
+# === Testing & Linters ===
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+
+# === IDEs & Editors ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === Logs & Local Databases ===
+*.log
+*.sqlite
+*.sqlite3
+*.db
