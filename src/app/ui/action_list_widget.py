@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -30,16 +31,34 @@ class ActionItemWidget(QFrame):
         layout.addWidget(self._build_content(action), stretch=1)
 
     def _build_content(self, action: dict) -> QWidget:
+        
+        action_wdg = QWidget()
+        wdg_layout = QVBoxLayout(action_wdg)
+        
+        # Get action type
         action_type = action.get("action", "unknown")
-
+        
         # Extend here per action_type (e.g., "click", "scroll")
         match action_type:
             case "click":
-                return QLabel(action_type)
+                wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
             case "scroll":
-                return QLabel(action_type)
+                wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
+                
+                # Y target
+                _x_target, _y_target = action['target']
+                y_target_section = QWidget()
+                y_target_section_layout = QHBoxLayout(y_target_section)
+                y_label = QLabel("Y Target")
+                y_target_edit = QLineEdit(str(_y_target))
+                y_target_edit.setMaximumWidth(150)
+                y_target_section_layout.addWidget(y_label)
+                y_target_section_layout.addWidget(y_target_edit)
+                wdg_layout.addWidget(y_target_section)
             case _:
-                return QLabel(action_type)
+                wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
+        
+        return action_wdg
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self.handle.geometry().contains(event.pos()):

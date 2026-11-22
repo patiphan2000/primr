@@ -150,6 +150,7 @@ class MainWindow(QMainWindow):
 
         self.stop_btn.setEnabled(True)
         self.stop_btn.setText("Stop Record")
+        self.stop_btn.setMinimumHeight(150)
         self.stack.setCurrentIndex(1)
 
         self.worker = RecordWorker(url)
