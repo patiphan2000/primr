@@ -11,10 +11,6 @@ def clean_action(
             
             # Add scroll to click element
             if idx > 0 and actions[idx - 1]['type'] == 'scroll':
-                # print(
-                #     f'driver.find_element("css selector", "{act["target"]}").click()  #'
-                #     f' {act["text"]}'
-                # )
                 prev_act = saved_actions.pop(-1)
                 _target_y = act["y"] + (act["height"] // 1.3)
                 saved_actions.append({
@@ -23,11 +19,18 @@ def clean_action(
                     'target': (prev_act["target"][0], _target_y)
                 })
         elif act["type"] == "scroll":
-            # print(f'driver.execute_script("window.scrollTo({act["x"]}, {act["y"]});")')
             saved_actions.append({
                 'order': idx + 1,
                 'action': 'scroll',
                 'target': (act["x"], act["y"])
             })
             
+    saved_actions.insert(
+        0, 
+        {
+            'order': 0,
+            'action': 'wait',
+            'duration': 0.5
+        }
+    )
     return saved_actions

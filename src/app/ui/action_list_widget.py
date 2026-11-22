@@ -1,5 +1,5 @@
 from PySide6.QtCore import QMimeData, Qt
-from PySide6.QtGui import QDrag, QIntValidator
+from PySide6.QtGui import QDoubleValidator, QDrag, QIntValidator
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -37,8 +37,23 @@ class ActionItemWidget(QFrame):
         action_type = action.get("action", "unknown")
 
         match action_type:
-            case "click":
+            case "wait":
                 wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
+                
+                _wait_duration = action["duration"]
+                duration_section = QWidget()
+                duration_section_layout = QHBoxLayout(duration_section)
+                duration_label = QLabel("Duration :")
+                duration_unit_label = QLabel("seconds")
+                duration_target_edit = QLineEdit(str(float(_wait_duration)))
+                duration_target_edit.setMaximumWidth(150)
+                duration_target_edit.setValidator(QDoubleValidator(0, 10, 2, duration_target_edit))
+                duration_target_edit.textChanged.connect(self._on_wait_duration_changed)
+                
+                duration_section_layout.addWidget(duration_label)
+                duration_section_layout.addWidget(duration_target_edit)
+                duration_section_layout.addWidget(duration_unit_label)
+                wdg_layout.addWidget(duration_section)
             case "scroll":
                 wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
 
@@ -54,10 +69,16 @@ class ActionItemWidget(QFrame):
                 y_target_section_layout.addWidget(y_label)
                 y_target_section_layout.addWidget(y_target_edit)
                 wdg_layout.addWidget(y_target_section)
+            case "click":
+                wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
             case _:
                 wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
 
         return action_wdg
+    
+    def _on_wait_duration_changed(self, text: str):
+        # if text.isdigit():
+        self.action["duration"] = float(text)
 
     def _on_y_target_changed(self, text: str):
         if text.isdigit():

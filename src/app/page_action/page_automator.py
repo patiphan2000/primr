@@ -146,11 +146,14 @@ def re_run_actions(
         for action in saved_actions:
             if stop_event and stop_event.is_set():
                 break
-            if action["action"] != "scroll":
-                continue
-
-            _, target_y = action["target"]
-            smooth_scroll(driver=driver, target_y=target_y)
+            
+            # Take action
+            match action["action"]:
+                case "wait":
+                    time.sleep(float(action["duration"]))
+                case "scroll":
+                    _, target_y = action["target"]
+                    smooth_scroll(driver=driver, target_y=target_y)
 
             if stop_event:
                 stop_event.wait(1)
