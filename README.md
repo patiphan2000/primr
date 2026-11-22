@@ -60,6 +60,7 @@
 ## 🗺️ Roadmap
 
 - [x] Initial release
+- [ ] Custom Aspect Ratio
 - [ ] Click and text input support
 - [ ] Page change / navigation support
 
