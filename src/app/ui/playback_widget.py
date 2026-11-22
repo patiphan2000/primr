@@ -1,9 +1,9 @@
 import os
-import shutil
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, QStandardPaths, Qt
 from PySide6.QtGui import QImageReader, QMovie
 from PySide6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -14,12 +14,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.page_action import export_recording
+
 
 class PlaybackWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.movie: QMovie | None = None
         self.natural_size = QSize()
+        self.raw_frames: list[tuple[float, bytes]] = []
+        self.total_duration: float = 0.0
         self.gif_path = ""
         self.video_path = ""
 
@@ -43,14 +47,19 @@ class PlaybackWidget(QWidget):
         controls.addWidget(self.save_btn)
         layout.addLayout(controls)
 
-    def load_recording(self, preview_gif_path: str, gif_path: str, video_path: str):
+    def load_recording(
+        self,
+        preview_gif_path: str,
+        raw_frames: list[tuple[float, bytes]],
+        total_duration: float,
+    ):
         if self.movie:
             self.movie.stop()
 
-        self.gif_path = gif_path
-        self.video_path = video_path
-        self.natural_size = QImageReader(gif_path).size()
-        self.movie = QMovie(gif_path)
+        self.raw_frames = raw_frames
+        self.total_duration = total_duration
+        self.natural_size = QImageReader(preview_gif_path).size()
+        self.movie = QMovie(preview_gif_path)
         self._update_scaled_size()
         self.display.setMovie(self.movie)
         self.movie.start()
@@ -60,11 +69,12 @@ class PlaybackWidget(QWidget):
         self.save_btn.setEnabled(True)
 
     def on_click_save(self):
-        if not self.gif_path or not self.video_path:
+        if not self.raw_frames:
             return
-
+        default_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
+        default_path = os.path.join(default_dir, "recording")
         chosen_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Recording (MP4 & GIF)", "recording", "All Files (*)"
+            self, "Save Recording (MP4 & GIF)", default_path, "All Files (*)"
         )
         if not chosen_path:
             return
@@ -73,13 +83,21 @@ class PlaybackWidget(QWidget):
         dst_mp4 = f"{base_path}.mp4"
         dst_gif = f"{base_path}.gif"
 
-        if os.path.exists(self.video_path):
-            shutil.copy2(self.video_path, dst_mp4)
-        if os.path.exists(self.gif_path):
-            shutil.copy2(self.gif_path, dst_gif)
-
-        QMessageBox.information(self, "Saved", f"Saved:\n{dst_mp4}\n{dst_gif}")
-
+        self.save_btn.setEnabled(False)
+        self.save_btn.setText("Saving...")
+        QApplication.processEvents()
+        try:
+            export_recording(
+                self.raw_frames,
+                self.total_duration,
+                gif_path=dst_gif,
+                video_path=dst_mp4,
+            )
+            QMessageBox.information(self, "Saved", f"Saved:\n{dst_mp4}\n{dst_gif}")
+        finally:
+            self.save_btn.setEnabled(True)
+            self.save_btn.setText("Save MP4 & GIF")
+            
     def _update_scaled_size(self):
         if not self.movie or not self.natural_size.isValid():
             return

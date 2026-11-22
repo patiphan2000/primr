@@ -8,7 +8,7 @@ import time
 from PIL import Image
 
 from .driver_helper import get_driver
-from .video_helper import _get_cdp_ws_url, _screencast_loop, save_recording
+from .video_helper import _get_cdp_ws_url, _screencast_loop, save_preview_gif
 
 
 def smooth_scroll(driver, target_y, max_speed=400, ease_distance=300, min_speed_ratio=0.0):
@@ -118,7 +118,7 @@ def re_run_actions(
     saved_actions: list[dict],
     stop_event: threading.Event | None = None,
     on_saving=None,
-) -> tuple[str, str, str] | None:
+) -> tuple[str, list[tuple[float, bytes]], float] | None:
     
     driver = get_driver(url=url, web_options={"hide-scrollbars": True})
 
@@ -168,13 +168,5 @@ def re_run_actions(
     if on_saving:
         on_saving()
 
-    save_recording(
-        frames,
-        total_duration=total_duration,
-        preview_gif_path=preview_gif_path,
-        gif_path=gif_path,
-        video_path=video_path,
-        video_fps=90,
-        gif_fps=60,
-    )
-    return preview_gif_path, gif_path, video_path
+    save_preview_gif(frames, total_duration, preview_gif_path, gif_fps=15)
+    return preview_gif_path, frames, total_duration

@@ -45,7 +45,7 @@ class RecordWorker(QThread):
 
 class ReRunWorker(QThread):
     status_changed = Signal(str)
-    finished_rerun = Signal(str, str, str)
+    finished_rerun = Signal(str, object, float)
     error_occurred = Signal(str)
 
     def __init__(self, url: str, actions: list[dict]):
@@ -60,10 +60,13 @@ class ReRunWorker(QThread):
                 self.url,
                 self.actions,
                 self.stop_event,
-                on_saving=lambda: self.status_changed.emit("Saving preview..."),
+                on_saving=lambda: self.status_changed.emit("Preparing preview..."),
             )
-            preview_gif, full_gif, video = result if result else ("", "", "")
-            self.finished_rerun.emit(preview_gif, full_gif, video)
+            if result:
+                preview_gif, raw_frames, total_duration = result
+                self.finished_rerun.emit(preview_gif, raw_frames, total_duration)
+            else:
+                self.finished_rerun.emit("", [], 0.0)
         except Exception as e:
             self.error_occurred.emit(str(e))
 
@@ -187,10 +190,10 @@ class MainWindow(QMainWindow):
         self.stop_btn.setEnabled(False)
         self.stop_btn.setText(text)
 
-    def on_rerun_finished(self, preview_gif: str, full_gif: str, video_path: str):
+    def on_rerun_finished(self, preview_gif: str, raw_frames: list, total_duration: float):
         if preview_gif:
             self.last_temp_dir = os.path.dirname(preview_gif)
-            self.playback.load_recording(preview_gif, full_gif, video_path)
+            self.playback.load_recording(preview_gif, raw_frames, total_duration)
         self.stack.setCurrentIndex(0)
 
     def on_worker_error(self, error_msg: str):
@@ -200,6 +203,10 @@ class MainWindow(QMainWindow):
         self.activateWindow()
 
     def _cleanup_temp_dir(self):
+        if self.playback.movie:
+            self.playback.movie.stop()
+            self.playback.display.clear()
+            self.playback.movie = None
         if self.last_temp_dir and os.path.exists(self.last_temp_dir):
             shutil.rmtree(self.last_temp_dir, ignore_errors=True)
             self.last_temp_dir = None

@@ -151,3 +151,71 @@ def save_recording(
 
     mp4_out = _resample_frames(mp4_frames, video_fps, total_duration)
     iio.imwrite(video_path, mp4_out, fps=video_fps, macro_block_size=2)
+    
+def save_preview_gif(
+    raw_frames: list[tuple[float, bytes]],
+    total_duration: float,
+    preview_gif_path: str,
+    gif_fps: int = 15,
+):
+    if not raw_frames:
+        return
+
+    preview_resized = [
+        (
+            t,
+            resize_to_720p(Image.open(io.BytesIO(data)).convert("RGB")).quantize(
+                colors=128, method=Image.Quantize.FASTOCTREE
+            ),
+        )
+        for t, data in raw_frames
+    ]
+    out = _resample_frames(preview_resized, gif_fps, total_duration)
+    out[0].save(
+        preview_gif_path,
+        save_all=True,
+        append_images=out[1:],
+        duration=int(1000 / gif_fps),
+        loop=0,
+    )
+
+
+def export_recording(
+    raw_frames: list[tuple[float, bytes]],
+    total_duration: float,
+    gif_path: str,
+    video_path: str,
+    video_fps: int = 90,
+    gif_fps: int = 30,
+):
+    if not raw_frames:
+        return
+
+    decoded = [
+        (t, Image.open(io.BytesIO(data)).convert("RGB"))
+        for t, data in raw_frames
+    ]
+
+    # Full-resolution GIF
+    gif_frames = [
+        (t, img.quantize(colors=256, method=Image.Quantize.FASTOCTREE))
+        for t, img in decoded
+    ]
+    gif_out = _resample_frames(gif_frames, gif_fps, total_duration)
+    gif_out[0].save(
+        gif_path,
+        save_all=True,
+        append_images=gif_out[1:],
+        duration=int(1000 / gif_fps),
+        loop=0,
+    )
+
+    # Full-resolution 90 FPS MP4
+    mp4_frames = []
+    for t, img in decoded:
+        w, h = img.size
+        even_img = img.crop((0, 0, w - (w % 2), h - (h % 2)))
+        mp4_frames.append((t, np.array(even_img)))
+
+    mp4_out = _resample_frames(mp4_frames, video_fps, total_duration)
+    iio.imwrite(video_path, mp4_out, fps=video_fps, macro_block_size=2)
