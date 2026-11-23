@@ -30,6 +30,16 @@ class ActionItemWidget(QFrame):
 
         layout.addWidget(self._build_content(action), stretch=1)
 
+    def _get_action_label(self, action_label) -> QLabel:
+        
+        action_label = QLabel(str(action_label).capitalize())
+        font = action_label.font()
+        font.setPointSize(16)
+        font.setBold(True)
+        action_label.setFont(font)
+        
+        return action_label
+
     def _build_content(self, action: dict) -> QWidget:
         action_wdg = QWidget()
         wdg_layout = QVBoxLayout(action_wdg)
@@ -38,7 +48,8 @@ class ActionItemWidget(QFrame):
 
         match action_type:
             case "wait":
-                wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
+                
+                wdg_layout.addWidget(self._get_action_label(action_type))
                 
                 _wait_duration = action["duration"]
                 duration_section = QWidget()
@@ -55,7 +66,7 @@ class ActionItemWidget(QFrame):
                 duration_section_layout.addWidget(duration_unit_label)
                 wdg_layout.addWidget(duration_section)
             case "scroll":
-                wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
+                wdg_layout.addWidget(self._get_action_label(action_type))
 
                 _x_target, _y_target = action["target"]
                 y_target_section = QWidget()
@@ -70,9 +81,11 @@ class ActionItemWidget(QFrame):
                 y_target_section_layout.addWidget(y_target_edit)
                 wdg_layout.addWidget(y_target_section)
             case "click":
-                wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
+                wdg_layout.addWidget(self._get_action_label(action_type))
+
             case _:
-                wdg_layout.addWidget(QLabel(str(action_type).capitalize()))
+                wdg_layout.addWidget(self._get_action_label(action_type))
+
 
         return action_wdg
     
