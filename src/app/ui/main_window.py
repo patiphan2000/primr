@@ -137,6 +137,7 @@ class MainWindow(QMainWindow):
         recording_page = QWidget()
         rec_layout = QVBoxLayout(recording_page)
         self.stop_btn = QPushButton("Stop")
+        self.stop_btn.setObjectName("Danger")
         self.stop_btn.clicked.connect(self.on_click_stop)
         rec_layout.addWidget(self.stop_btn)
 

@@ -1,0 +1,66 @@
+QWidget {
+    color: #EFE8DD;
+    background-color: #303841;
+}
+
+QPushButton {
+    color: #303841;
+    background-color: #EFE8DD;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 600;
+}
+
+QPushButton:hover {
+    background-color: #e0d3be;
+}
+
+QPushButton:pressed {
+    background-color: #e0d3be;
+    border: 1px solid #d0d0d0;
+    border-bottom: 3px #85a0a0a0;
+    border-right: 2px solid #85b0b0b0;
+}
+
+QPushButton:disabled { 
+    color: #80efe8dd;
+    background-color: #2b323a;
+}
+
+QPushButton#Danger {
+    color: #303841;
+    background-color: #f63b00;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 600;
+}
+
+QPushButton#Danger:hover {
+    background-color: #dd3500;
+}
+
+QPushButton#Danger:pressed {
+    background-color: #dd3500;
+    border: 1px solid #d0d0d0;
+    border-bottom: 3px #85a0a0a0;
+    border-right: 2px solid #85b0b0b0;
+}
+
+QLineEdit {
+    color: #EFE8DD;
+    background-color: #2b323a;
+}
+
+ActionItemWidget {
+    background-color: #3c4651;
+    border-radius: 8px;
+}
+
+ActionItemWidget QLabel {
+    background-color: #3c4651;
+}
+ActionItemWidget QWidget {
+    background-color: #3c4651;
+}
