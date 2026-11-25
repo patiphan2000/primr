@@ -48,7 +48,6 @@ class ActionItemWidget(QFrame):
 
         match action_type:
             case "wait":
-                
                 wdg_layout.addWidget(self._get_action_label(action_type))
                 
                 _wait_duration = action["duration"]
@@ -65,13 +64,14 @@ class ActionItemWidget(QFrame):
                 duration_section_layout.addWidget(duration_target_edit)
                 duration_section_layout.addWidget(duration_unit_label)
                 wdg_layout.addWidget(duration_section)
+
             case "scroll":
                 wdg_layout.addWidget(self._get_action_label(action_type))
 
                 _x_target, _y_target = action["target"]
                 y_target_section = QWidget()
                 y_target_section_layout = QHBoxLayout(y_target_section)
-                y_label = QLabel("Y Target")
+                y_label = QLabel("Y Target :")
                 y_target_edit = QLineEdit(str(int(_y_target)))
                 y_target_edit.setMaximumWidth(150)
                 y_target_edit.setValidator(QIntValidator(0, 999999, y_target_edit))
@@ -80,12 +80,61 @@ class ActionItemWidget(QFrame):
                 y_target_section_layout.addWidget(y_label)
                 y_target_section_layout.addWidget(y_target_edit)
                 wdg_layout.addWidget(y_target_section)
+
             case "click":
                 wdg_layout.addWidget(self._get_action_label(action_type))
 
+                # Target selector section
+                _target = action.get("target", "")
+                target_section = QWidget()
+                target_section_layout = QHBoxLayout(target_section)
+                target_label = QLabel("Target :")
+                target_edit = QLineEdit(str(_target))
+                target_edit.setMaximumWidth(150)
+                target_edit.textChanged.connect(self._on_click_target_changed)
+
+                target_section_layout.addWidget(target_label)
+                target_section_layout.addWidget(target_edit)
+                wdg_layout.addWidget(target_section)
+
+                # Text section
+                _text = action.get("text", "")
+                text_section = QWidget()
+                text_section_layout = QHBoxLayout(text_section)
+                text_label = QLabel("Text :")
+                text_edit = QLineEdit(str(_text))
+                text_edit.setMaximumWidth(150)
+                text_edit.textChanged.connect(self._on_click_text_changed)
+
+                text_section_layout.addWidget(text_label)
+                text_section_layout.addWidget(text_edit)
+                wdg_layout.addWidget(text_section)
+
+                # Coordinates (X, Y) section
+                _x_coord, _y_coord = action.get("coords", (0, 0))
+                coords_section = QWidget()
+                coords_section_layout = QHBoxLayout(coords_section)
+
+                x_label = QLabel("X :")
+                x_edit = QLineEdit(str(int(_x_coord)))
+                x_edit.setMaximumWidth(70)
+                x_edit.setValidator(QIntValidator(0, 999999, x_edit))
+                x_edit.textChanged.connect(self._on_click_x_changed)
+
+                y_label = QLabel("Y :")
+                y_edit = QLineEdit(str(int(_y_coord)))
+                y_edit.setMaximumWidth(70)
+                y_edit.setValidator(QIntValidator(0, 999999, y_edit))
+                y_edit.textChanged.connect(self._on_click_y_changed)
+
+                coords_section_layout.addWidget(x_label)
+                coords_section_layout.addWidget(x_edit)
+                coords_section_layout.addWidget(y_label)
+                coords_section_layout.addWidget(y_edit)
+                wdg_layout.addWidget(coords_section)
+
             case _:
                 wdg_layout.addWidget(self._get_action_label(action_type))
-
 
         return action_wdg
     
@@ -97,6 +146,22 @@ class ActionItemWidget(QFrame):
         if text.isdigit():
             x_target, _ = self.action["target"]
             self.action["target"] = (x_target, int(text))
+    
+    def _on_click_target_changed(self, text: str) -> None:
+        self.action["target"] = text
+
+    def _on_click_text_changed(self, text: str) -> None:
+        self.action["text"] = text
+
+    def _on_click_x_changed(self, text: str) -> None:
+        if text:
+            _, y = self.action.get("coords", (0, 0))
+            self.action["coords"] = (int(text), y)
+
+    def _on_click_y_changed(self, text: str) -> None:
+        if text:
+            x, _ = self.action.get("coords", (0, 0))
+            self.action["coords"] = (x, int(text))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self.handle.geometry().contains(event.pos()):
