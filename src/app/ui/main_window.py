@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QPushButton,
+    QRadioButton,
     QSplitter,
     QStackedWidget,
     QVBoxLayout,
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
 from app.page_action import re_run_actions, record_page_actions
 
 from .action_list_widget import ActionListWidget
+from .constants import ASPECT_RATIO_RESOLUTION
 from .playback_widget import PlaybackWidget
 
 
@@ -97,6 +99,7 @@ class MainWindow(QMainWindow):
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
 
+        # ===== URL =====
         url_section = QWidget()
         url_sec_layout = QHBoxLayout(url_section)
         url_label = QLabel("URL")
@@ -106,14 +109,38 @@ class MainWindow(QMainWindow):
         url_sec_layout.addWidget(self.url_text_field)
         left_layout.addWidget(url_section)
 
-        group_box = QGroupBox("Settings")
+        # ===== Settings =====
         box_layout = QVBoxLayout()
+        group_box = QGroupBox("Settings")
+        
+        # === Window Setting ===
+        # === Aspect Ratio Setting ===
+        aspect_ratio_setting_box = QWidget()
+        aspect_ratio_box_layout = QHBoxLayout(aspect_ratio_setting_box)
+        
+        for aspect_ratio in ASPECT_RATIO_RESOLUTION:
+            aspect_ratio_box_layout.addWidget(QRadioButton(aspect_ratio))
+        left_layout.addWidget(aspect_ratio_setting_box)
+        # === Orientation Setting ===
+        orientation_setting_box = QWidget()
+        orientation_box_layout = QHBoxLayout(orientation_setting_box)
+        
+        for orientation in [
+            'portrait',
+            'landscape'
+        ]:
+            orientation_box_layout.addWidget(QRadioButton(orientation))
+        left_layout.addWidget(orientation_setting_box)
+        
+        # === Record Setting ===
         self.scroll_to_click_cb = QCheckBox("Scroll to Click")
         self.scroll_to_click_cb.setChecked(True)
         box_layout.addWidget(self.scroll_to_click_cb)
-        group_box.setLayout(box_layout)
         left_layout.addWidget(group_box)
+        
+        group_box.setLayout(box_layout)
 
+        # ===== Start Record =====
         rec_btn = QPushButton("Start Record Actions")
         rec_btn.clicked.connect(self.on_click_record)
         left_layout.addWidget(rec_btn)
@@ -125,7 +152,7 @@ class MainWindow(QMainWindow):
         self.rerun_btn.clicked.connect(self.on_click_rerun)
         left_layout.addWidget(self.rerun_btn)
 
-        # Right Panel
+        # ===== Right Panel =====
         self.playback = PlaybackWidget()
 
         splitter.addWidget(left_panel)
@@ -133,7 +160,7 @@ class MainWindow(QMainWindow):
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 2)
 
-        # --- Page 1: Stop UI ---
+        # ===== Page 1: Stop UI =====
         recording_page = QWidget()
         rec_layout = QVBoxLayout(recording_page)
         self.stop_btn = QPushButton("Stop")
