@@ -3,6 +3,7 @@ import os
 import tempfile
 import threading
 import time
+from typing import Literal
 
 from selenium.common.exceptions import (
     ElementClickInterceptedException,
@@ -392,9 +393,16 @@ def re_run_actions(
     saved_actions: list[dict],
     stop_event: threading.Event | None = None,
     on_saving=None,
+    aspect_ratio: Literal['4:3', '16:9', '18:9']='4:3',
+    orientation: Literal['portrait', 'landscape']='portrait',
 ) -> tuple[str, list[tuple[float, bytes]], float] | None:
     
-    driver = get_driver(url=url, web_options={"hide-scrollbars": True})
+    driver = get_driver(
+        url=url, 
+        web_options={"hide-scrollbars": True},
+        aspect_ratio=aspect_ratio,
+        orientation=orientation
+    )
 
     frames: list[tuple[float, bytes]] = []
     temp_dir = tempfile.mkdtemp(prefix="primr_")

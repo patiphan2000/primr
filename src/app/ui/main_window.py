@@ -1,6 +1,7 @@
 import os
 import shutil
 import threading
+from functools import partial
 
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
@@ -29,14 +30,26 @@ class RecordWorker(QThread):
     finished_recording = Signal(list)
     error_occurred = Signal(str)
 
-    def __init__(self, url: str):
+    def __init__(
+        self, 
+        url: str,
+        aspect_ratio: str,
+        orientation: str,
+    ):
         super().__init__()
         self.url = url
         self.stop_event = threading.Event()
+        self.aspect_ratio = aspect_ratio
+        self.orientation = orientation
 
     def run(self):
         try:
-            actions = record_page_actions(self.url, self.stop_event)
+            actions = record_page_actions(
+                self.url, 
+                self.stop_event,
+                self.aspect_ratio,
+                self.orientation,
+            )
             self.finished_recording.emit(actions)
         except Exception as e:
             self.error_occurred.emit(str(e))
@@ -50,11 +63,18 @@ class ReRunWorker(QThread):
     finished_rerun = Signal(str, object, float)
     error_occurred = Signal(str)
 
-    def __init__(self, url: str, actions: list[dict]):
+    def __init__(
+        self, url: str, 
+        actions: list[dict],
+        aspect_ratio: str,
+        orientation: str,
+    ):
         super().__init__()
         self.url = url
         self.actions = actions
         self.stop_event = threading.Event()
+        self.aspect_ratio = aspect_ratio
+        self.orientation = orientation
 
     def run(self):
         try:
@@ -63,6 +83,8 @@ class ReRunWorker(QThread):
                 self.actions,
                 self.stop_event,
                 on_saving=lambda: self.status_changed.emit("Preparing preview..."),
+                aspect_ratio=self.aspect_ratio,
+                orientation=self.orientation
             )
             if result:
                 preview_gif, raw_frames, total_duration = result
@@ -115,16 +137,19 @@ class MainWindow(QMainWindow):
         
         # === Window Setting ===
         # === Aspect Ratio Setting ===
+        self.aspect_ratio = '4:3' # default aspect ratio
         aspect_ratio_setting_box = QWidget()
         aspect_ratio_box_layout = QHBoxLayout(aspect_ratio_setting_box)
         
         for aspect_ratio in ASPECT_RATIO_RESOLUTION:
             _radio_btn = QRadioButton(aspect_ratio)
-            if aspect_ratio == '4:3':
+            if aspect_ratio == self.aspect_ratio:
                 _radio_btn.setChecked(True)
+            _radio_btn.clicked.connect(partial(self.on_update_aspect_ratio, aspect_ratio))
             aspect_ratio_box_layout.addWidget(_radio_btn)
         left_layout.addWidget(aspect_ratio_setting_box)
         # === Orientation Setting ===
+        self.orientation = 'portrait' # default orientation
         orientation_setting_box = QWidget()
         orientation_box_layout = QHBoxLayout(orientation_setting_box)
         
@@ -133,8 +158,9 @@ class MainWindow(QMainWindow):
             'landscape'
         ]:
             _radio_btn = QRadioButton(orientation)
-            if orientation == 'portrait':
+            if orientation == self.orientation:
                 _radio_btn.setChecked(True)
+            _radio_btn.clicked.connect(partial(self.on_update_orientation, orientation))
             orientation_box_layout.addWidget(_radio_btn)
         left_layout.addWidget(orientation_setting_box)
         
@@ -187,7 +213,11 @@ class MainWindow(QMainWindow):
         self.stop_btn.setMinimumHeight(150)
         self.stack.setCurrentIndex(1)
 
-        self.worker = RecordWorker(url)
+        self.worker = RecordWorker(
+            url,
+            aspect_ratio=self.aspect_ratio,
+            orientation=self.orientation,
+        )
         self.worker.finished_recording.connect(self.on_recording_finished)
         self.worker.error_occurred.connect(self.on_worker_error)
         self.worker.start()
@@ -204,7 +234,12 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(1)
         self.showMinimized()  # Let Chrome sit unobstructed on screen
 
-        self.worker = ReRunWorker(url, updated_actions)
+        self.worker = ReRunWorker(
+            url,
+            updated_actions,
+            aspect_ratio=self.aspect_ratio,
+            orientation=self.orientation,
+        )
         self.worker.status_changed.connect(self.on_rerun_status)
         self.worker.finished_rerun.connect(self.on_rerun_finished)
         self.worker.error_occurred.connect(self.on_worker_error)
@@ -236,6 +271,14 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(0)
         self.showNormal()
         self.activateWindow()
+        
+    def on_update_aspect_ratio(self, new_aspect_ratio: str):
+        print(new_aspect_ratio)
+        self.aspect_ratio = new_aspect_ratio
+        
+    def on_update_orientation(self, new_orientation: str):
+        print(new_orientation)
+        self.orientation = new_orientation
 
     def _cleanup_temp_dir(self):
         if self.playback.movie:

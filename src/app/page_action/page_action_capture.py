@@ -1,13 +1,23 @@
 import threading
 import time
+from typing import Literal
 
 from .actions_helper import clean_action
 from .driver_helper import get_driver
 
 
-def record_page_actions(url: str, stop_event: threading.Event | None = None) -> list[dict]:
+def record_page_actions(
+    url: str, 
+    stop_event: threading.Event | None = None,
+    aspect_ratio: Literal['4:3', '16:9', '18:9']='4:3',
+    orientation: Literal['portrait', 'landscape']='portrait',
+) -> list[dict]:
     
-    driver = get_driver(url)
+    driver = get_driver(
+        url,
+        aspect_ratio=aspect_ratio,
+        orientation=orientation
+    )
 
     recorder_js = """
     window.recordedActions = [];

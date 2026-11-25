@@ -4,8 +4,8 @@ from selenium import webdriver
 
 ASPECT_RATIO_RESOLUTION = {
     '4:3': (1280, 960),
-    '16:9': (1280, 960),
-    '18:9': (1280, 960),
+    '16:9': (1707, 960),
+    '18:9': (1920, 960),
 }
 
 def get_driver(
