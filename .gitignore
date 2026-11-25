@@ -99,3 +99,4 @@ dmypy.json
 # === Files & Output ===
 *.mp4
 *.gif
+*.sh
