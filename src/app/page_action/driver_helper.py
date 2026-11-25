@@ -2,7 +2,7 @@ from typing import Literal
 
 from selenium import webdriver
 
-ASPECT_RATION_RESOLUTION = {
+ASPECT_RATIO_RESOLUTION = {
     '4:3': (1280, 960),
     '16:9': (1280, 960),
     '18:9': (1280, 960),
@@ -24,7 +24,7 @@ def get_driver(
     options.add_argument(f"--app={url}")
     
     # Set resolution
-    w, h = ASPECT_RATION_RESOLUTION.get(aspect_ratio, (1280, 960))
+    w, h = ASPECT_RATIO_RESOLUTION.get(aspect_ratio, (1280, 960))
     x, y = w, h
     if orientation == 'portrait':
         x, y = h, w
