@@ -119,7 +119,10 @@ class MainWindow(QMainWindow):
         aspect_ratio_box_layout = QHBoxLayout(aspect_ratio_setting_box)
         
         for aspect_ratio in ASPECT_RATIO_RESOLUTION:
-            aspect_ratio_box_layout.addWidget(QRadioButton(aspect_ratio))
+            _radio_btn = QRadioButton(aspect_ratio)
+            if aspect_ratio == '4:3':
+                _radio_btn.setChecked(True)
+            aspect_ratio_box_layout.addWidget(_radio_btn)
         left_layout.addWidget(aspect_ratio_setting_box)
         # === Orientation Setting ===
         orientation_setting_box = QWidget()
@@ -129,7 +132,10 @@ class MainWindow(QMainWindow):
             'portrait',
             'landscape'
         ]:
-            orientation_box_layout.addWidget(QRadioButton(orientation))
+            _radio_btn = QRadioButton(orientation)
+            if orientation == 'portrait':
+                _radio_btn.setChecked(True)
+            orientation_box_layout.addWidget(_radio_btn)
         left_layout.addWidget(orientation_setting_box)
         
         # === Record Setting ===
