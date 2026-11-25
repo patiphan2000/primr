@@ -64,3 +64,24 @@ ActionItemWidget QLabel {
 ActionItemWidget QWidget {
     background-color: #3c4651;
 }
+
+QRadioButton {
+    background-color:       #303841;
+    color:                  #EFE8DD;
+}
+
+QRadioButton::indicator {
+    width:                  16px;
+    height:                 16px;
+    border-radius:          8px;
+}
+
+QRadioButton::indicator:checked {
+    background-color:       #FF5722;
+    border:                 2px solid #EFE8DD;
+}
+
+QRadioButton::indicator:unchecked {
+    background-color:       #303841;
+    border:                 2px solid #EFE8DD;
+}
