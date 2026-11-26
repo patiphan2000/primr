@@ -62,6 +62,8 @@
 - [x] Initial release
 - [x] Custom Aspect Ratio
 - [x] Click support
+- [ ] Side scroll support
+- [ ] Custom scrolling speed
 - [ ] Text input support
 - [ ] Page change / navigation support
 
