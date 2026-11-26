@@ -9,7 +9,7 @@ from .driver_helper import get_driver
 def record_page_actions(
     url: str, 
     stop_event: threading.Event | None = None,
-    aspect_ratio: Literal['4:3', '16:9', '18:9']='4:3',
+    aspect_ratio: Literal['3:2', '4:3', '16:9']='4:3',
     orientation: Literal['portrait', 'landscape']='portrait',
 ) -> list[dict]:
     
