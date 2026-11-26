@@ -83,12 +83,10 @@ class ActionItemWidget(QFrame):
                 target_section = QWidget()
                 target_section_layout = QHBoxLayout(target_section)
                 target_label = QLabel("Target :")
-                target_edit = QLineEdit(str(_target))
-                target_edit.setMaximumWidth(150)
-                target_edit.textChanged.connect(self._on_click_target_changed)
+                target_text = QLabel(str(_target))
 
                 target_section_layout.addWidget(target_label)
-                target_section_layout.addWidget(target_edit)
+                target_section_layout.addWidget(target_text)
                 wdg_layout.addWidget(target_section)
 
                 # Coordinates (X, Y) section
