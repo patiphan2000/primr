@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
     QRadioButton,
     QSplitter,
     QStackedWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -24,7 +26,46 @@ from .constants import ASPECT_RATIO_RESOLUTION
 from .playback_widget import PlaybackWidget
 from .worker import RecordWorker, ReRunWorker
 
-     
+
+class CollapsibleSection(QWidget):
+    def __init__(self, title: str = "", collapsed: bool = False, parent=None):
+        super().__init__(parent)
+
+        self.toggle_btn = QToolButton(self)
+        self.toggle_btn.setText(title)
+        self.toggle_btn.setCheckable(True)
+        self.toggle_btn.setChecked(not collapsed)
+        self.toggle_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.toggle_btn.setArrowType(
+            Qt.ArrowType.RightArrow if collapsed else Qt.ArrowType.DownArrow
+        )
+        self.toggle_btn.setStyleSheet("QToolButton { border: none; font-weight: bold; }")
+        self.toggle_btn.toggled.connect(self._on_toggled)
+
+        self.content_area = QWidget(self)
+        self.content_layout = QVBoxLayout(self.content_area)
+        self.content_layout.setContentsMargins(12, 0, 0, 0)
+        self.content_area.setVisible(not collapsed)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(2)
+        main_layout.addWidget(self.toggle_btn)
+        main_layout.addWidget(self.content_area)
+
+    def add_widget(self, widget: QWidget):
+        self.content_layout.addWidget(widget)
+        
+    def set_collapsed(self, collapsed: bool):
+        self.toggle_btn.setChecked(not collapsed)
+        
+    def _on_toggled(self, checked: bool):
+        self.toggle_btn.setArrowType(
+            Qt.ArrowType.DownArrow if checked else Qt.ArrowType.RightArrow
+        )
+        self.content_area.setVisible(checked)
+
+
 class RadioSettingGroup(QWidget):
     valueChanged = Signal(str)
 
@@ -64,6 +105,7 @@ class RadioSettingGroup(QWidget):
         self._current_btn = clicked_btn
         self.valueChanged.emit(self.value)
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -85,7 +127,11 @@ class MainWindow(QMainWindow):
 
         # Left Panel
         left_panel = QWidget()
+        left_panel.setMinimumWidth(520)
         left_layout = QVBoxLayout(left_panel)
+
+        # ======= Collapsible START =======
+        self.collapsible_setup = CollapsibleSection("Page & Window Settings", collapsed=False)
 
         # ===== URL =====
         url_section = QWidget()
@@ -95,12 +141,8 @@ class MainWindow(QMainWindow):
         self.url_text_field.setMinimumWidth(400)
         url_sec_layout.addWidget(url_label)
         url_sec_layout.addWidget(self.url_text_field)
-        left_layout.addWidget(url_section)
+        self.collapsible_setup.add_widget(url_section)
 
-        # ===== Settings =====
-        box_layout = QVBoxLayout()
-        group_box = QGroupBox("Settings")
-        
         # === Window Setting ===
         # === Aspect Ratio Setting ===
         self.aspect_ratio_setting = RadioSettingGroup(
@@ -108,9 +150,7 @@ class MainWindow(QMainWindow):
             default='4:3',
             validator=lambda: self.confirm_clear_actions('Aspect Ratio'),
         )
-        # Optional: react when it actually changes
-        # self.aspect_ratio_setting.valueChanged.connect(self.on_aspect_ratio_changed)
-        left_layout.addWidget(self.aspect_ratio_setting)
+        self.collapsible_setup.add_widget(self.aspect_ratio_setting)
 
         # === Orientation Setting ===
         self.orientation_setting = RadioSettingGroup(
@@ -118,23 +158,43 @@ class MainWindow(QMainWindow):
             default='Portrait',
             validator=lambda: self.confirm_clear_actions('Orientation'),
         )
-        left_layout.addWidget(self.orientation_setting)
-        
-        # === Record Setting ===
-        self.scroll_to_click_cb = QCheckBox("Scroll to Click")
-        self.scroll_to_click_cb.setChecked(True)
-        box_layout.addWidget(self.scroll_to_click_cb)
-        left_layout.addWidget(group_box)
-        
-        group_box.setLayout(box_layout)
+        self.collapsible_setup.add_widget(self.orientation_setting)
 
+        # # ===== Control Settings =====
+        # box_layout = QVBoxLayout()
+        # group_box = QGroupBox("Settings")
+
+        # # === Record Setting ===
+        # self.scroll_to_click_cb = QCheckBox("Scroll to Click")
+        # self.scroll_to_click_cb.setChecked(True)
+        # box_layout.addWidget(self.scroll_to_click_cb)
+        # group_box.setLayout(box_layout)
+        # self.collapsible_setup.add_widget(group_box)
+        
         # ===== Start Record =====
         rec_btn = QPushButton("Start Record Actions")
         rec_btn.clicked.connect(self.on_click_record)
-        left_layout.addWidget(rec_btn)
+        self.collapsible_setup.add_widget(rec_btn)
+        
+        left_layout.addWidget(self.collapsible_setup)
+        # ======= Collapsible END =======
 
+        # Horizontal separator line
+        h_line = QFrame()
+        h_line.setFrameShape(QFrame.Shape.HLine)
+        h_line.setFrameShadow(QFrame.Shadow.Sunken)
+        left_layout.addWidget(h_line)
+        
         # ===== Action List =====
+        recorded_section_title = QLabel("Recorded Actions")
+        font = recorded_section_title.font()
+        font.setPointSize(18)
+        font.setBold(True)
+        recorded_section_title.setFont(font)
+        left_layout.addWidget(recorded_section_title)
+        
         self.action_list = ActionListWidget()
+        self.action_list.setMinimumHeight(250)
         left_layout.addWidget(self.action_list)
 
         self.rerun_btn = QPushButton("Re-run Actions")
@@ -169,6 +229,9 @@ class MainWindow(QMainWindow):
         self.stop_btn.setText("Stop Record")
         self.stop_btn.setMinimumHeight(150)
         self.stack.setCurrentIndex(1)
+        
+        # Collapse section
+        self.collapsible_setup.set_collapsed(True)
 
         self.worker = RecordWorker(
             url,
@@ -228,7 +291,7 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(0)
         self.showNormal()
         self.activateWindow()
-        
+
     def confirm_clear_actions(self, setting_name: str) -> bool:
         if not self.recorded_actions:
             return True
