@@ -25,7 +25,8 @@ def clean_action(
                 'xpath': act.get("xpath", ""),
                 'text': act.get("text", ""),
                 'coords': (act["x"], act["y"]),
-                'height': act.get("height", 0)
+                'height': act.get("height", 0),
+                'wait_after_click': 0.0
             })
             
         elif act["type"] == "scroll":

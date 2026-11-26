@@ -124,6 +124,7 @@ def _perform_click(driver, action: dict, timeout: float = 3.0) -> None:
     xpath = action.get("xpath")
     target = action.get("target")
     coords = action.get("coords")
+    wait_after = action.get("wait_after_click", 0.0)
 
     element = None
 
@@ -163,6 +164,7 @@ def _perform_click(driver, action: dict, timeout: float = 3.0) -> None:
                     "clickCount": 1,
                 },
             )
+        time.sleep(wait_after)
 
 def _find_scroll_container(driver, mouse_x: float, mouse_y: float, xpath: str = ""):
     if xpath:

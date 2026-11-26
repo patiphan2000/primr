@@ -1,7 +1,5 @@
-from PySide6.QtCore import QMimeData, Qt
-from PySide6.QtGui import QDoubleValidator, QDrag, QIntValidator
+from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import (
-    QApplication,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -111,7 +109,23 @@ class ActionItemWidget(QFrame):
                 coords_section_layout.addWidget(y_label)
                 coords_section_layout.addWidget(y_edit)
                 wdg_layout.addWidget(coords_section)
-
+                
+                # Wait after click section
+                _wait_after = action.get("wait_after_click", 0.0)
+                wait_after_section = QWidget()
+                wait_after_section_layout = QHBoxLayout(wait_after_section)
+                wait_label = QLabel("Wait after click for :")
+                wait_duration = QLineEdit(str(_wait_after))
+                wait_duration.setMaximumWidth(50)
+                wait_duration.setValidator(QDoubleValidator(0, 10, 2, wait_duration))
+                wait_duration.textChanged.connect(self._on_click_wait_changed)
+                wait_unit_label = QLabel("seconds")
+                
+                wait_after_section_layout.addWidget(wait_label)
+                wait_after_section_layout.addWidget(wait_duration)
+                wait_after_section_layout.addWidget(wait_unit_label)
+                wdg_layout.addWidget(wait_after_section)
+                
             case _:
                 wdg_layout.addWidget(self._get_action_label(action_type))
 
@@ -141,6 +155,10 @@ class ActionItemWidget(QFrame):
         if text:
             x, _ = self.action.get("coords", (0, 0))
             self.action["coords"] = (x, int(text))
+            
+    def _on_click_wait_changed(self, text: str) -> None:
+        if text:
+            self.action["wait_after_click"] = float(text)
 
 
 class ActionListWidget(QScrollArea):
