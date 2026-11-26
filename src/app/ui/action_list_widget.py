@@ -172,10 +172,6 @@ class ActionListWidget(QScrollArea):
         self._layout.addStretch()
         self.setWidget(self._container)
 
-        self._container.dragEnterEvent = self._drag_enter_event
-        self._container.dragMoveEvent = self._drag_move_event
-        self._container.dropEvent = self._drop_event
-
     def set_actions(self, actions: list[dict]):
         while self._layout.count() > 1:
             item = self._layout.takeAt(0)
@@ -190,33 +186,3 @@ class ActionListWidget(QScrollArea):
             self._layout.itemAt(i).widget().action # type: ignore
             for i in range(self._layout.count() - 1)
         ]
-
-    def _drag_enter_event(self, event):
-        if isinstance(event.source(), ActionItemWidget):
-            event.acceptProposedAction()
-
-    def _drag_move_event(self, event):
-        if isinstance(event.source(), ActionItemWidget):
-            event.acceptProposedAction()
-
-    def _drop_event(self, event):
-        source = event.source()
-        if not isinstance(source, ActionItemWidget):
-            return
-
-        drop_y = event.position().y()
-        item_count = self._layout.count() - 1
-        target_index = item_count
-
-        for i in range(item_count):
-            w = self._layout.itemAt(i).widget() # type: ignore
-            if drop_y < w.y() + w.height() / 2: # type: ignore
-                target_index = i
-                break
-
-        current_index = self._layout.indexOf(source)
-        self._layout.removeWidget(source)
-        if current_index < target_index:
-            target_index -= 1
-        self._layout.insertWidget(target_index, source)
-        event.acceptProposedAction()
