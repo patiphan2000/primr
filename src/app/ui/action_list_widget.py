@@ -22,12 +22,6 @@ class ActionItemWidget(QFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 6, 8, 6)
 
-        self.handle = QLabel("⋮⋮")
-        self.handle.setFixedWidth(20)
-        self.handle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.handle.setCursor(Qt.CursorShape.OpenHandCursor)
-        layout.addWidget(self.handle)
-
         layout.addWidget(self._build_content(action), stretch=1)
 
     def _get_action_label(self, action_label) -> QLabel:
@@ -149,27 +143,6 @@ class ActionItemWidget(QFrame):
         if text:
             x, _ = self.action.get("coords", (0, 0))
             self.action["coords"] = (x, int(text))
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton and self.handle.geometry().contains(event.pos()):
-            self._drag_start_pos = event.pos()
-        else:
-            self._drag_start_pos = None
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if not self._drag_start_pos:
-            return
-        if (event.pos() - self._drag_start_pos).manhattanLength() < QApplication.startDragDistance():
-            return
-
-        drag = QDrag(self)
-        mime = QMimeData()
-        mime.setText(self.action.get("action", ""))
-        drag.setMimeData(mime)
-        drag.setPixmap(self.grab())
-        drag.exec(Qt.DropAction.MoveAction)
-        self._drag_start_pos = None
 
 
 class ActionListWidget(QScrollArea):
