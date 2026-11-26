@@ -57,7 +57,9 @@ class ActionItemWidget(QFrame):
         
         left_wdg = QWidget()
         wdg_layout = QVBoxLayout(left_wdg)
-        wdg_layout.addStretch(1)
+        wdg_layout.addStretch()
+        wdg_layout.setSpacing(0)
+        wdg_layout.setContentsMargins(0, 0, 0, 0)
 
         action_type = action.get("action", "unknown")
 

@@ -58,11 +58,12 @@ ActionItemWidget {
     border-radius: 25px;
 }
 
-ActionItemWidget QLabel {
-    background-color: #3c4651;
-}
 ActionItemWidget QWidget {
-    background-color: #3c4651;
+    background-color: #00ffffff;
+}
+
+ActionItemWidget QLabel {
+    background-color: #00ffffff;
 }
 
 QRadioButton {
