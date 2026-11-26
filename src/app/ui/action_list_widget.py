@@ -1,9 +1,11 @@
-from PySide6.QtGui import QDoubleValidator, QIntValidator
+from PySide6.QtCore import QSize, Signal
+from PySide6.QtGui import QDoubleValidator, QIcon, QIntValidator
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -11,6 +13,9 @@ from PySide6.QtWidgets import (
 
 
 class ActionItemWidget(QFrame):
+    
+    delete_requested = Signal(object)
+    
     def __init__(self, action: dict, parent=None):
         super().__init__(parent)
         self.action = action
@@ -34,7 +39,11 @@ class ActionItemWidget(QFrame):
 
     def _build_content(self, action: dict) -> QWidget:
         action_wdg = QWidget()
-        wdg_layout = QVBoxLayout(action_wdg)
+        action_wdg_layout = QHBoxLayout(action_wdg)
+        
+        left_wdg = QWidget()
+        wdg_layout = QVBoxLayout(left_wdg)
+        wdg_layout.addStretch(1)
 
         action_type = action.get("action", "unknown")
 
@@ -129,6 +138,17 @@ class ActionItemWidget(QFrame):
             case _:
                 wdg_layout.addWidget(self._get_action_label(action_type))
 
+        action_wdg_layout.addWidget(left_wdg)
+        
+        # Add delete button
+        delete_btn = QPushButton()
+        delete_btn.setObjectName("DeleteButton")
+        delete_btn.setIcon(QIcon("resources/icons/delete-icon.png"))
+        delete_btn.setIconSize(QSize(18, 18))  # Adjust icon size
+        delete_btn.setToolTip("Delete action")
+        delete_btn.clicked.connect(lambda: self.delete_requested.emit(self))
+        action_wdg_layout.addWidget(delete_btn)
+        
         return action_wdg
     
     def _on_wait_duration_changed(self, text: str):
@@ -179,10 +199,16 @@ class ActionListWidget(QScrollArea):
                 item.widget().deleteLater() # type: ignore
 
         for action in actions:
-            self._layout.insertWidget(self._layout.count() - 1, ActionItemWidget(action, self._container))
+            item_widget = ActionItemWidget(action, self._container)
+            item_widget.delete_requested.connect(self._remove_action_item)
+            self._layout.insertWidget(self._layout.count() - 1, item_widget)
 
     def get_actions(self) -> list[dict]:
         return [
             self._layout.itemAt(i).widget().action # type: ignore
             for i in range(self._layout.count() - 1)
         ]
+
+    def _remove_action_item(self, item_widget: ActionItemWidget):
+        self._layout.removeWidget(item_widget)
+        item_widget.deleteLater()

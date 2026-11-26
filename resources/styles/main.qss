@@ -85,3 +85,19 @@ QRadioButton::indicator:unchecked {
     background-color:       #303841;
     border:                 2px solid #EFE8DD;
 }
+
+QPushButton#DeleteButton {
+    color: #303841;
+    background-color: #f63b00;
+    border: none;
+    border-radius: 18px;
+}
+
+QPushButton#DeleteButton:hover {
+    background-color: #dd3500;
+}
+
+QPushButton#DeleteButton:pressed {
+    background-color: #dd3500;
+    border: 2px solid #EFE8DD;
+}
