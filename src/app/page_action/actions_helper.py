@@ -3,7 +3,7 @@ import uuid
 
 def clean_action(
     actions: list[dict],
-    scroll_to_click: bool = True
+    scroll_to_click: bool = False
 ) -> list[dict]:
     
     print("\nGenerated Selenium Replay Code:")
