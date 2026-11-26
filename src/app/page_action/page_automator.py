@@ -149,6 +149,7 @@ def _perform_click(driver, action: dict, timeout: float = 3.0) -> None:
             element.click()
         except ElementClickInterceptedException:
             driver.execute_script("arguments[0].click();", element)
+        time.sleep(wait_after)
         return
 
     if coords:
