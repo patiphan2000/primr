@@ -55,7 +55,7 @@ QLineEdit {
 
 ActionItemWidget {
     background-color: #3c4651;
-    border-radius: 8px;
+    border-radius: 25px;
 }
 
 ActionItemWidget QLabel {

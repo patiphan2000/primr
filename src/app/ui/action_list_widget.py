@@ -1,4 +1,4 @@
-from PySide6.QtCore import QSize, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QDoubleValidator, QIcon, QIntValidator
 from PySide6.QtWidgets import (
     QFrame,
@@ -27,15 +27,29 @@ class ActionItemWidget(QFrame):
 
         layout.addWidget(self._build_content(action), stretch=1)
 
-    def _get_action_label(self, action_label) -> QLabel:
+    def _get_action_label(self, action_label) -> QWidget:
         
+        action_title = QWidget()
+        title_layout = QHBoxLayout(action_title)
+        title_layout.setStretch(0, 0)
+        title_layout.setStretch(0, 0)
+        
+        # Set Icon
+        icon = QIcon(f"resources/icons/{action_label}-icon.png")
+        action_icon = QLabel()
+        action_icon.setPixmap(icon.pixmap(24))
+        title_layout.addWidget(action_icon)
+        title_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        
+        # Set font
         action_label = QLabel(str(action_label).capitalize())
         font = action_label.font()
         font.setPointSize(16)
         font.setBold(True)
         action_label.setFont(font)
+        title_layout.addWidget(action_label)
         
-        return action_label
+        return action_title
 
     def _build_content(self, action: dict) -> QWidget:
         action_wdg = QWidget()
@@ -72,7 +86,11 @@ class ActionItemWidget(QFrame):
                 _x_target, _y_target = action["target"]
                 y_target_section = QWidget()
                 y_target_section_layout = QHBoxLayout(y_target_section)
+                
+                # Label
                 y_label = QLabel("Y Target :")
+                
+                # Y Target
                 y_target_edit = QLineEdit(str(int(_y_target)))
                 y_target_edit.setMaximumWidth(150)
                 y_target_edit.setValidator(QIntValidator(0, 999999, y_target_edit))
