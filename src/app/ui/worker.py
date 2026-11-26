@@ -62,8 +62,8 @@ class ReRunWorker(QThread):
                 self.actions,
                 self.stop_event,
                 on_saving=lambda: self.status_changed.emit("Preparing preview..."),
-                aspect_ratio=self.aspect_ratio_setting.value, # type: ignore
-                orientation=self.orientation_setting.value, # type: ignore
+                aspect_ratio=self.aspect_ratio, # type: ignore
+                orientation=self.aspect_ratio, # type: ignore
             )
             if result:
                 preview_gif, raw_frames, total_duration = result
