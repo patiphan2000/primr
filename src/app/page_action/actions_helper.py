@@ -1,3 +1,6 @@
+import uuid
+
+
 def clean_action(
     actions: list[dict],
     scroll_to_click: bool = True
@@ -11,7 +14,7 @@ def clean_action(
                 prev_act = saved_actions.pop(-1)
                 _target_y = int(act["y"] + (act["height"] // 1.3))
                 saved_actions.append({
-                    'order': prev_act['order'],
+                    'id': prev_act['id'],
                     'action': 'scroll',
                     'target': (prev_act["target"][0], _target_y),
                     'mouse_pos': prev_act.get('mouse_pos', (0, 0)),
@@ -19,7 +22,7 @@ def clean_action(
                 })
                 
             saved_actions.append({
-                'order': idx + 1,
+                'id': str(uuid.uuid4()),
                 'action': 'click',
                 'target': act["target"],
                 'xpath': act.get("xpath", ""),
@@ -31,7 +34,7 @@ def clean_action(
             
         elif act["type"] == "scroll":
             saved_actions.append({
-                'order': idx + 1,
+                'id': str(uuid.uuid4()),
                 'action': 'scroll',
                 'target': (act["x"], act["y"]),
                 'mouse_pos': (act.get("mouse_x", 0), act.get("mouse_y", 0)),
@@ -41,7 +44,7 @@ def clean_action(
     saved_actions.insert(
         0, 
         {
-            'order': 0,
+            'id': '0',
             'action': 'wait',
             'duration': 0.5
         }
