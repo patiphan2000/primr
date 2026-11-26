@@ -197,8 +197,11 @@ class MainWindow(QMainWindow):
         self.action_list.setMinimumHeight(250)
         left_layout.addWidget(self.action_list)
 
+        # ===== Re-Run Button =====
         self.rerun_btn = QPushButton("Re-run Actions")
         self.rerun_btn.clicked.connect(self.on_click_rerun)
+        if not self.recorded_actions: # disable if no recorded actions
+            self.rerun_btn.setDisabled(True)
         left_layout.addWidget(self.rerun_btn)
 
         # ===== Right Panel =====
@@ -274,6 +277,7 @@ class MainWindow(QMainWindow):
     def on_recording_finished(self, actions: list):
         self.recorded_actions = actions
         self.action_list.set_actions(actions)
+        self.rerun_btn.setDisabled(False)
         self.stack.setCurrentIndex(0)
 
     def on_rerun_status(self, text: str):
@@ -306,6 +310,8 @@ class MainWindow(QMainWindow):
         if confirm_clear:
             self.recorded_actions = []
             self.action_list.set_actions(self.recorded_actions)
+            self.rerun_btn.setDisabled(True)
+            
         return confirm_clear
 
     def _cleanup_temp_dir(self):
