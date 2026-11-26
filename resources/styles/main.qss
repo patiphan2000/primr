@@ -101,3 +101,39 @@ QPushButton#DeleteButton:pressed {
     background-color: #dd3500;
     border: 2px solid #EFE8DD;
 }
+
+QScrollBar:vertical {
+    background: #303841;
+    width: 7px;
+    margin: 0px;
+    border-radius: 3px;
+}
+
+QScrollBar:horizontal {
+    height: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #2b323a;
+    min-height: 24px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #4b5766;
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #414c58;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+    background: none;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
