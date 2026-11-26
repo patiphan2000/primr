@@ -1,16 +1,17 @@
 import os
 import shutil
 import threading
-from functools import partial
 
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
+    QButtonGroup,
     QCheckBox,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QRadioButton,
     QSplitter,
@@ -47,8 +48,8 @@ class RecordWorker(QThread):
             actions = record_page_actions(
                 self.url, 
                 self.stop_event,
-                self.aspect_ratio,
-                self.orientation,
+                self.aspect_ratio, # type: ignore
+                self.orientation, # type: ignore
             )
             self.finished_recording.emit(actions)
         except Exception as e:
@@ -83,8 +84,8 @@ class ReRunWorker(QThread):
                 self.actions,
                 self.stop_event,
                 on_saving=lambda: self.status_changed.emit("Preparing preview..."),
-                aspect_ratio=self.aspect_ratio,
-                orientation=self.orientation
+                aspect_ratio=self.aspect_ratio_setting.value, # type: ignore
+                orientation=self.orientation_setting.value, # type: ignore
             )
             if result:
                 preview_gif, raw_frames, total_duration = result
@@ -96,7 +97,45 @@ class ReRunWorker(QThread):
 
     def stop(self):
         self.stop_event.set()
+     
+class RadioSettingGroup(QWidget):
+    valueChanged = Signal(str)
 
+    def __init__(self, options, default: str, validator=None, parent=None):
+        super().__init__(parent)
+        self._validator = validator  # Optional function returning True/False
+        self._current_btn = None
+
+        layout = QHBoxLayout(self)
+        self._group = QButtonGroup(self)
+
+        for option in options:
+            btn = QRadioButton(option)
+            if option == default:
+                btn.setChecked(True)
+                self._current_btn = btn
+            self._group.addButton(btn)
+            layout.addWidget(btn)
+
+        self._group.buttonClicked.connect(self._on_button_clicked)
+
+    @property
+    def value(self) -> str:
+        return self._current_btn.text() if self._current_btn else ""
+
+    def _on_button_clicked(self, clicked_btn: QRadioButton):
+        # Ignore clicks on the already-selected button
+        if clicked_btn is self._current_btn:
+            return
+
+        # Ask validator if the change is allowed; revert if canceled
+        if self._validator and not self._validator():
+            if self._current_btn:
+                self._current_btn.setChecked(True)  # Automatically unchecks clicked_btn
+            return
+
+        self._current_btn = clicked_btn
+        self.valueChanged.emit(self.value)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -137,32 +176,22 @@ class MainWindow(QMainWindow):
         
         # === Window Setting ===
         # === Aspect Ratio Setting ===
-        self.aspect_ratio = '4:3' # default aspect ratio
-        aspect_ratio_setting_box = QWidget()
-        aspect_ratio_box_layout = QHBoxLayout(aspect_ratio_setting_box)
-        
-        for aspect_ratio in ASPECT_RATIO_RESOLUTION:
-            _radio_btn = QRadioButton(aspect_ratio)
-            if aspect_ratio == self.aspect_ratio:
-                _radio_btn.setChecked(True)
-            _radio_btn.clicked.connect(partial(self.on_update_aspect_ratio, aspect_ratio))
-            aspect_ratio_box_layout.addWidget(_radio_btn)
-        left_layout.addWidget(aspect_ratio_setting_box)
+        self.aspect_ratio_setting = RadioSettingGroup(
+            options=ASPECT_RATIO_RESOLUTION,
+            default='4:3',
+            validator=lambda: self.confirm_clear_actions('Aspect Ratio'),
+        )
+        # Optional: react when it actually changes
+        # self.aspect_ratio_setting.valueChanged.connect(self.on_aspect_ratio_changed)
+        left_layout.addWidget(self.aspect_ratio_setting)
+
         # === Orientation Setting ===
-        self.orientation = 'portrait' # default orientation
-        orientation_setting_box = QWidget()
-        orientation_box_layout = QHBoxLayout(orientation_setting_box)
-        
-        for orientation in [
-            'portrait',
-            'landscape'
-        ]:
-            _radio_btn = QRadioButton(orientation)
-            if orientation == self.orientation:
-                _radio_btn.setChecked(True)
-            _radio_btn.clicked.connect(partial(self.on_update_orientation, orientation))
-            orientation_box_layout.addWidget(_radio_btn)
-        left_layout.addWidget(orientation_setting_box)
+        self.orientation_setting = RadioSettingGroup(
+            options=['Landscape', 'Portrait'],
+            default='Portrait',
+            validator=lambda: self.confirm_clear_actions('Orientation'),
+        )
+        left_layout.addWidget(self.orientation_setting)
         
         # === Record Setting ===
         self.scroll_to_click_cb = QCheckBox("Scroll to Click")
@@ -177,6 +206,7 @@ class MainWindow(QMainWindow):
         rec_btn.clicked.connect(self.on_click_record)
         left_layout.addWidget(rec_btn)
 
+        # ===== Action List =====
         self.action_list = ActionListWidget()
         left_layout.addWidget(self.action_list)
 
@@ -215,8 +245,8 @@ class MainWindow(QMainWindow):
 
         self.worker = RecordWorker(
             url,
-            aspect_ratio=self.aspect_ratio,
-            orientation=self.orientation,
+            aspect_ratio=self.aspect_ratio_setting.value,
+            orientation=self.orientation_setting.value,
         )
         self.worker.finished_recording.connect(self.on_recording_finished)
         self.worker.error_occurred.connect(self.on_worker_error)
@@ -237,8 +267,8 @@ class MainWindow(QMainWindow):
         self.worker = ReRunWorker(
             url,
             updated_actions,
-            aspect_ratio=self.aspect_ratio,
-            orientation=self.orientation,
+            aspect_ratio=self.aspect_ratio_setting.value,
+            orientation=self.orientation_setting.value,
         )
         self.worker.status_changed.connect(self.on_rerun_status)
         self.worker.finished_rerun.connect(self.on_rerun_finished)
@@ -272,13 +302,21 @@ class MainWindow(QMainWindow):
         self.showNormal()
         self.activateWindow()
         
-    def on_update_aspect_ratio(self, new_aspect_ratio: str):
-        print(new_aspect_ratio)
-        self.aspect_ratio = new_aspect_ratio
-        
-    def on_update_orientation(self, new_orientation: str):
-        print(new_orientation)
-        self.orientation = new_orientation
+    def confirm_clear_actions(self, setting_name: str) -> bool:
+        if not self.recorded_actions:
+            return True
+
+        reply = QMessageBox.question(
+            self,
+            f"Change {setting_name}?",
+            f"Changing {setting_name} will clear your recorded actions. Are you sure?",
+            QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
+        )
+        confirm_clear = reply == QMessageBox.StandardButton.Ok
+        if confirm_clear:
+            self.recorded_actions = []
+            self.action_list.set_actions(self.recorded_actions)
+        return confirm_clear
 
     def _cleanup_temp_dir(self):
         if self.playback.movie:
